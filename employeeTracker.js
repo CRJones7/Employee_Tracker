@@ -31,14 +31,13 @@ function toDo() {
                 'Veiw all employees by department',
                 'View all employees by manager',
                 'Add a new employee',
-                'Remove and employee',
+                'Remove an employee',
                 'Update an employee',
             ]
         }
     ]).then(answer => {
         switch (answer.toDo) {
             case 'View all employees':
-                // function to show all employees
                 viewAll();
                 break;
             case 'Veiw all employees by department':
@@ -49,14 +48,12 @@ function toDo() {
             //     // filtered by manager
             //     byManager();
             //     break;
-            // case 'Add a new employee':
-            //     // add employee function
-            //     addEmployee();
-            //     break;
-            // case 'Remove and employee':
-            //     // remove employee
-            //     removeEmployee();
-            //     break;
+            case 'Add a new employee':
+                addEmployee();
+                break;
+            case 'Remove an employee':
+                removeEmployee();
+                break;
             // case 'Update an employee':
             //     // Edit an employee
             //     editEmployee();
@@ -68,26 +65,11 @@ function toDo() {
 
 function viewAll() {
     console.log("Selecting all employees...\n");
-    connection.query("SELECT employee.first_name 'First Name', employee.last_name 'Last Name', role.title 'Title', role.salary 'Salary' FROM employee LEFT JOIN role ON employee.role_id = role.title", function (err, res) {
+    connection.query("SELECT employee.first_name 'First Name', employee.last_name 'Last Name', role.title 'Title', role.salary 'Salary' FROM employee LEFT JOIN role ON employee.role_id = role.id", function (err, res) {
         if (err) throw err;
         // Log all results of the SELECT statement
         console.table(res);
-
-
-        inquirer.prompt([
-            {
-                type: 'confirm',
-                message: 'Would you like to make anymore changes?',
-                name: 'moreChanges'
-            }
-        ]).then(answer => {
-            if (answer.moreChanges === true) {
-                toDo();
-            } else {
-                console.log('Youre up to date!');
-                connection.end();
-            }
-        });
+        askAgain();
     });
 };
 
@@ -97,7 +79,8 @@ function byDepartment() {
     connection.query('SELECT name FROM department', function (err, results) {
         if (err) throw err;
         else {
-            inquirer.prompt([
+            inquirer
+            .prompt([
                 {
                     type: 'list',
                     message: 'What department would you like to see?',
@@ -105,19 +88,20 @@ function byDepartment() {
                     // choices: results.map(result => result.name)
                     choices: results
                 }
-            ])
+            ]).then(answer => {
+                connection.query(
+    //    SELECT department.name, employee.first_name, employee.last_name, FROM department 
+
+                    ''
+                )
+            })
         }
     });
-         // filter employee table by which department is selected
+        // filter employee table by which department is selected
         // Employees have a role id 
-       // if the user selects Sales I want to show all employees who work in the sales department
-    connection.query('SELECT name FROM department', function (err, results){
+        // if the user selects Sales I want to show all employees who work in the sales department
 
-    });
 
-                
-              
-               
 }
 
 
@@ -146,31 +130,93 @@ function byDepartment() {
 //     })
 // };
 
-// function addEmployee() {
-
-// };
-
-// function removeEmployee() {
+// function editEmployee(){
 
 // }
 
+function addEmployee() {
+    inquirer
+        .prompt([
+            {
+                type: 'input',
+                message: 'What is the new employees first name?',
+                name: "firstName"
+            },
+            {
+                type: 'input',
+                message: 'What is the new employees last name?',
+                name: "lastName"
+            },
+            {
+                type: 'input',
+                message: 'What is the new employees role Id?',
+                name: "roleId"
+            },
+            {
+                type: 'input',
+                message: 'What is the new employees managers Id?',
+                name: "managersId"
+            }
+        ]).then(answers => {
+            connection.query(
+                'INSERT INTO employee SET ?',
+                {
+                    first_name: answers.firstName,
+                    last_name: answers.lastName,
+                    role_id: answers.roleId,
+                    manager_id: answers.managersId
+                },
+                function (err, res) {
+                    if (err) throw err;
+                    console.log(res.affectedRows + 'employee inserted! \n')
+                    askAgain();
+                }
+            )
+        })
+};
 
+function removeEmployee() {
+    connection.query(
+        'SELECT first_name, last_name FROM employee', function (err, results) {
+            console.log(results);
+            inquirer
+                .prompt([
+                    {
+                        type: 'list',
+                        message: 'Which employee would you like to remove from the database?',
+                        name: 'remove',
+                        choices: results.map(result => result.first_name + " " + results.last_name)
+                    }
+                ]).then(answer => {
+                    console.log('Deleting employee' + answer + "\n");
+                    connection.query(
+                        'DELETE FROM employee WHERE ?',
+                        {
+                            first_name: answer.remove
+                        },
+                        function (err, res) {
+                            if (err) throw err;
+                            console.log(res.affectedRows + " has been deleted! \n ");
+                            askAgain();
+                        }
+                    )
+                })
+        });
+}
 
-
-// run this when ending things!!
-// function anyMore(){
-//     inquirer.prompt([
-//         {
-//             type: 'confirm',
-//             message: 'Would you like to make anymore changes?',
-//             name: 'moreChanges'
-//         }
-//     ]).then(answer => {
-//         if (answer.moreChanges === true) {
-//             toDo();
-//         } else {
-//             console.log('Youre up to date!');
-//             connection.end();
-//         }
-//     });
-// };
+function askAgain() {
+    inquirer.prompt([
+        {
+            type: 'confirm',
+            message: 'Is there anything else you would like to do today?',
+            name: 'moreChanges'
+        }
+    ]).then(answer => {
+        if (answer.moreChanges === true) {
+            toDo();
+        } else {
+            console.log('Youre up to date!');
+            connection.end();
+        }
+    });
+};
