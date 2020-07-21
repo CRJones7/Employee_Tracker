@@ -90,3 +90,7 @@ INSERT INTO employee
 SET
 ?
 
+-- combining role table with department table
+SELECT role.title, role.salary, role.department_id, department.name
+FROM role LEFT JOIN department ON role.department_id = department.id
+
