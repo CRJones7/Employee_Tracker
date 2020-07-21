@@ -2,6 +2,7 @@ const mysql = require("mysql");
 const inquirer = require("inquirer");
 const util = require('util');
 
+let employeeProfile;
 
 var connection = mysql.createConnection({
 
@@ -33,6 +34,7 @@ function toDo() {
                 'Add a new employee',
                 'Remove an employee',
                 'Update an employee',
+                'Exit'
             ]
         }
     ]).then(answer => {
@@ -41,23 +43,24 @@ function toDo() {
                 viewAll();
                 break;
             case 'Veiw all employees by department':
-                // function to show all filtered by department
+
                 byDepartment();
                 break;
-            // case 'View all employees by manager':
-            //     // filtered by manager
-            //     byManager();
-            //     break;
             case 'Add a new employee':
                 addEmployee();
                 break;
             case 'Remove an employee':
                 removeEmployee();
                 break;
-            // case 'Update an employee':
-            //     // Edit an employee
-            //     editEmployee();
-            //     break;
+            case 'Update an employee':
+                // Edit an employee
+                updateEmployee();
+                break;
+            case 'Exit':
+                console.log('Youre up to date!');
+                connection.end();
+                break;
+
 
         }
     })
@@ -79,60 +82,95 @@ function byDepartment() {
     connection.query('SELECT name FROM department', function (err, results) {
         if (err) throw err;
         else {
+            console.log(results);
             inquirer
-            .prompt([
-                {
-                    type: 'list',
-                    message: 'What department would you like to see?',
-                    name: 'department',
-                    // choices: results.map(result => result.name)
-                    choices: results
-                }
-            ]).then(answer => {
-                connection.query(
-    //    SELECT department.name, employee.first_name, employee.last_name, FROM department 
+                .prompt([
+                    {
+                        type: 'rawlist',
+                        message: 'What department would you like to see?',
+                        name: 'department',
+                        choices: results
+                    }
+                ]).then(answer => {
+                    connection.query(`SELECT department.name, role.title, employee.first_name, employee.last_name
+                    FROM department, role, employee
+                    WHERE employee.role_id = role.id AND role.department_id = department.id AND department.name = "${answer.department}"`, function (err, results) {
+                        if (err) throw err;
+                        console.table(results);
+                        askAgain();
+                    })
 
-                    ''
-                )
-            })
+                })
         }
     });
-        // filter employee table by which department is selected
-        // Employees have a role id 
-        // if the user selects Sales I want to show all employees who work in the sales department
+
 
 
 }
 
 
-// function byManager() {
-//     console.log("Selecting all employees by manager...\n");
-//     connection.query("SELECT * FROM employee WHERE manager = ?", function (err, res) {
-//         if (err) throw err;
-//         // Log all results of the SELECT statement
-//         console.table(res);
-//         //   connection.end();
-//     }).then(answer => {
-//         inquirer.prompt([
-//             {
-//                 type: 'confirm',
-//                 message: 'Would you like to make anymore changes?',
-//                 name: 'moreChanges'
-//             }
-//         ]).then(answer => {
-//             if (answer.moreChanges === true) {
-//                 toDo();
-//             } else {
-//                 console.log('Youre up to date!');
-//                 connection.end();
-//             }
-//         })
-//     })
-// };
-
-// function editEmployee(){
-
-// }
+function updateEmployee() {
+    connection.query(
+        'SELECT department.name "Department", role.title, employee.first_name, employee.last_name, employee.id FROM department, role, employee WHERE employee.role_id = role.id AND role.department_id = department.id',
+        function (err, results) {
+            employeeProfile = results;
+            if (err) throw err;
+            let employeeList = results.map(employee => {
+                return `${employee.id} ${employee.first_name} ${employee.last_name}`
+            })
+            // console.log(employeeList);
+            inquirer
+                .prompt([
+                    {
+                        type: "list",
+                        message: 'Which employee would you like to update?',
+                        name: "employee",
+                        choices: employeeList
+                    }
+                ]).then(answer => {
+                    console.log(answer);
+                    let employeeInfo = answer.employee.split(" ");
+                    let allInfo = employeeProfile.filter(data => {
+                        return data.id === parseInt(employeeInfo[0]);
+                    })
+                    console.table(allInfo);
+                    inquirer
+                        .prompt([
+                            {
+                                type: 'list',
+                                message: 'What would you like to update for this employee?',
+                                name: 'update',
+                                choices: [
+                                    'Change first name',
+                                    'Change last name',
+                                    'Switch department',
+                                    'Change employees title',
+                                    'Exit'
+                                ]
+                            }
+                        ]).then(answer => {
+                            switch (answer.update) {
+                                case 'Change first name':
+                                    updateFName();
+                                    break;
+                                case 'Change last name':
+                                    updateLName();
+                                    break;
+                                case 'Switch department':
+                                    updateDepartment();
+                                    break;
+                                case 'Change employees title':
+                                    changeTitle();
+                                    break;
+                                case 'Exit':
+                                    askAgain();
+                                    break;
+                            }
+                        })
+                })
+        }
+    )
+};
 
 function addEmployee() {
     inquirer
@@ -220,3 +258,50 @@ function askAgain() {
         }
     });
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// function byManager() {
+//     console.log("Selecting all employees by manager...\n");
+//     connection.query("SELECT * FROM employee WHERE manager = ?", function (err, res) {
+//         if (err) throw err;
+//         // Log all results of the SELECT statement
+//         console.table(res);
+//         //   connection.end();
+//     }).then(answer => {
+//         inquirer.prompt([
+//             {
+//                 type: 'confirm',
+//                 message: 'Would you like to make anymore changes?',
+//                 name: 'moreChanges'
+//             }
+//         ]).then(answer => {
+//             if (answer.moreChanges === true) {
+//                 toDo();
+//             } else {
+//                 console.log('Youre up to date!');
+//                 connection.end();
+//             }
+//         })
+//     })
+// };
