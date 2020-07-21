@@ -33,6 +33,7 @@ function toDo() {
                 'View all employees by manager',
                 'Add a new employee',
                 'Add a new Role',
+                'Add a new Department',
                 'Remove an employee',
                 'Update an employee',
                 'Exit'
@@ -51,6 +52,9 @@ function toDo() {
                 break;
             case 'Add a new Role':
                 rolesTable();
+                break;
+            case 'Add a new Department':
+                viewDepartments();
                 break;
             case 'Remove an employee':
                 removeEmployee();
@@ -78,7 +82,6 @@ function viewAll() {
         askAgain();
     });
 };
-
 
 
 function byDepartment() {
@@ -110,7 +113,6 @@ function byDepartment() {
 
 
 }
-
 
 // function updateEmployee() {
 //     connection.query(
@@ -188,7 +190,8 @@ function addRole() {
                 name: 'departmentId'
             }
         ]).then(answers => {
-            connection.query('INSERT INTO role SET ?',
+            connection.query(
+                'INSERT INTO role SET ?',
                 {
                     title: answers.roleTitle,
                     salary: answers.roleSalary,
@@ -196,12 +199,42 @@ function addRole() {
                 },
                 function (err, res) {
                     if (err) throw err;
-                    console.log(res.affectedRows + 'role inserted! \n')
+                    console.log(res.affectedRows + ' role inserted! \n')
                     askAgain();
                 });
         })
 };
+function viewDepartments() {
+    connection.query('SELECT name AS "Department Title" FROM department', function (err, results) {
+        if (err) throw err;
 
+        console.log('\n Here are all current Departments. \n');
+        console.table(results);
+        addDepartment();
+    });
+};
+
+function addDepartment() {
+    inquirer
+        .prompt([
+            {
+                type: 'inout',
+                message: 'What is the Title of the new department?',
+                name: 'newDep'
+            }
+        ]).then(answer => {
+            connection.query(
+                'INSERT INTO department SET ?',
+                {
+                    name: answer.newDep
+                },
+                function (err, res) {
+                    if (err) throw err;
+                    console.log(res.affectedRows + ' department inserted! \n')
+                    askAgain();
+                });
+        })
+};
 
 function addEmployee() {
     inquirer
@@ -237,7 +270,7 @@ function addEmployee() {
                 },
                 function (err, res) {
                     if (err) throw err;
-                    console.log(res.affectedRows + 'employee inserted! \n')
+                    console.log(res.affectedRows + ' employee inserted! \n')
                     askAgain();
                 })
         })
