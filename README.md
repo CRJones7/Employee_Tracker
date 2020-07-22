@@ -24,4 +24,6 @@ Remove an employee
 Update an employees Role
 ```
 
+# App Demo
+
 [![App Demo](./image1.png)](https://drive.google.com/file/d/1Yu6O_5LPNtrT5SLD81-WvrHYyDxDNyIX/view)
