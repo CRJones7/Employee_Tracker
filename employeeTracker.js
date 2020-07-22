@@ -1,6 +1,6 @@
 const mysql = require("mysql");
 const inquirer = require("inquirer");
-
+const boxen = require('boxen');
 
 let employeeProfile;
 
@@ -17,10 +17,16 @@ var connection = mysql.createConnection({
 connection.connect(err => {
     if (err) throw err;
     console.log("connected as id " + connection.threadId + "\n");
-    toDo();
+    starter();
 });
 
+function starter() {
+    console.log(boxen('Employee Tracker', { padding: 1, margin: 1, borderStyle: 'double' }));
+    toDo();
+}
+
 function toDo() {
+
     inquirer.prompt([
         {
             type: 'list',
@@ -29,7 +35,6 @@ function toDo() {
             choices: [
                 'View all employees',
                 'Veiw all employees by department',
-                'View all employees by manager',
                 'Add a new employee',
                 'Add a new Role',
                 'Add a new Department',
@@ -105,7 +110,7 @@ function byDepartment() {
     connection.query('SELECT name FROM department', function (err, results) {
         if (err) throw err;
         else {
-            console.log(results);
+
             inquirer
                 .prompt([
                     {
@@ -285,26 +290,25 @@ function addEmployee() {
 
 function removeEmployee() {
     connection.query(
-        'SELECT first_name, last_name FROM employee', function (err, results) {
-            console.log(results);
+        'SELECT * FROM employee', function (err, results) {
+            if (err) throw err;
             inquirer
                 .prompt([
                     {
                         type: 'list',
                         message: 'Which employee would you like to remove from the database?',
                         name: 'remove',
-                        choices: results.map(result => result.first_name + " " + results.last_name)
+                        choices: results.map(result => result.id + " " + result.first_name + " " + result.last_name)
                     }
                 ]).then(answer => {
-                    console.log('Deleting employee' + answer + "\n");
+                    let selection = answer.remove.split(' ')[0];
+
                     connection.query(
-                        'DELETE FROM employee WHERE ?',
-                        {
-                            first_name: answer.remove
-                        },
+                        'DELETE FROM employee WHERE id = ?',
+                        [selection[0]],
                         function (err, res) {
                             if (err) throw err;
-                            console.log(res.affectedRows + " has been deleted! \n ");
+                            console.log(res.affectedRows + " employee has been removed! \n ");
                             askAgain();
                         }
                     )
